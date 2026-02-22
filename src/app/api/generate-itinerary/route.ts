@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import type { TripInputs } from '@/types/planner'
 import type { GeneratedItinerary } from '@/types/itinerary'
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY?.trim() })
 
 export const maxDuration = 60
 
