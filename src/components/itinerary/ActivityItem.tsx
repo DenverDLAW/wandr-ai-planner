@@ -23,9 +23,9 @@ export function ActivityItem({ item }: Props) {
   const cost = item.estimatedCostPerPersonUsd ?? item.estimatedCostUsd
 
   return (
-    <div className="flex gap-4 py-4 border-b border-gray-50 last:border-0">
+    <div className="flex gap-3 sm:gap-4 py-4 border-b border-gray-50 last:border-0">
       {/* Thumbnail */}
-      <div className="relative h-20 w-24 rounded-xl overflow-hidden flex-shrink-0">
+      <div className="relative h-16 w-20 sm:h-20 sm:w-24 rounded-xl overflow-hidden flex-shrink-0">
         {loading && <div className="absolute inset-0 skeleton" />}
         {!loading && !imageUrl && (
           <div className="absolute inset-0 bg-gray-100 flex items-center justify-center text-2xl">

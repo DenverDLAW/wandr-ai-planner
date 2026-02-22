@@ -41,7 +41,7 @@ export function ShareModal({ itinerary, tripId, onClose }: Props) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
 
-      <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 animate-fade-in">
+      <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-md p-5 sm:p-8 animate-fade-in">
         <button
           onClick={onClose}
           className="absolute top-5 right-5 h-9 w-9 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors"
@@ -49,8 +49,8 @@ export function ShareModal({ itinerary, tripId, onClose }: Props) {
           <X className="h-5 w-5 text-gray-500" />
         </button>
 
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Share your trip</h2>
-        <p className="text-gray-400 mb-8">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Share your trip</h2>
+        <p className="text-gray-400 mb-5 sm:mb-8">
           Let a friend see your {itinerary.destination} itinerary before you book.
         </p>
 
@@ -84,7 +84,7 @@ export function ShareModal({ itinerary, tripId, onClose }: Props) {
             <p className="font-semibold text-gray-900">
               {copied ? 'Link copied!' : 'Copy link'}
             </p>
-            <p className="text-sm text-gray-400 truncate max-w-[220px]">{shareUrl}</p>
+            <p className="text-sm text-gray-400 truncate max-w-[160px] sm:max-w-[220px]">{shareUrl}</p>
           </div>
         </button>
       </div>

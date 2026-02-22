@@ -18,7 +18,7 @@ export function HotelItem({ hotel }: Props) {
   return (
     <div className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm flex flex-col md:flex-row">
       {/* Photo */}
-      <div className="relative h-56 md:h-auto md:w-[45%] flex-shrink-0">
+      <div className="relative h-44 sm:h-56 md:h-auto md:w-[45%] flex-shrink-0">
         {loading && <div className="absolute inset-0 skeleton" />}
         {!loading && !imageUrl && (
           <div className="absolute inset-0 bg-gradient-to-br from-blue-100 to-indigo-200 flex items-center justify-center">
@@ -37,11 +37,11 @@ export function HotelItem({ hotel }: Props) {
       </div>
 
       {/* Details */}
-      <div className="flex-1 p-6 flex flex-col justify-between">
+      <div className="flex-1 p-4 sm:p-6 flex flex-col justify-between">
         <div>
           <div className="flex items-start justify-between gap-3 mb-2">
             <div>
-              <h3 className="text-xl font-bold text-gray-900">{hotel.name}</h3>
+              <h3 className="text-lg sm:text-xl font-bold text-gray-900">{hotel.name}</h3>
               <p className="text-sm text-gray-400 flex items-center gap-1 mt-1">
                 <MapPin className="h-3.5 w-3.5" />
                 {hotel.location}
@@ -72,7 +72,7 @@ export function HotelItem({ hotel }: Props) {
         <div className="mt-4">
           <div className="flex items-end gap-3 mb-3">
             <div>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-xl sm:text-2xl font-bold text-gray-900">
                 {formatCurrency(hotel.estimatedCostPerNightUsd)}
               </p>
               <p className="text-xs text-gray-400">per night (est.)</p>

@@ -15,24 +15,24 @@ const BUDGET_ICONS = ['✈️', '🏨', '🍽️', '🥂', '✨']
 
 export function BudgetSection({ name, onComplete }: Props) {
   return (
-    <div className="w-full max-w-2xl mx-auto px-8 text-center">
-      <span className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 tracking-widest uppercase mb-6">
+    <div className="w-full max-w-2xl mx-auto px-4 sm:px-8 text-center">
+      <span className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 tracking-widest uppercase mb-5 sm:mb-6">
         <DollarSign className="h-4 w-4" />
         Almost there
       </span>
-      <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-3">
+      <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-3">
         What&apos;s your budget?
       </h2>
-      <p className="text-gray-400 text-lg mb-10">
+      <p className="text-gray-400 text-base sm:text-lg mb-7 sm:mb-10">
         Per person, {name}. We&apos;ll make every dollar count.
       </p>
 
-      <div className="space-y-3">
+      <div className="space-y-2 sm:space-y-3">
         {BUDGETS.map((b, i) => (
           <button
             key={b}
             onClick={() => onComplete(b)}
-            className="w-full flex items-center gap-4 p-5 rounded-2xl
+            className="w-full flex items-center gap-3 sm:gap-4 p-4 sm:p-5 rounded-2xl
                        border-2 border-gray-100 hover:border-blue-500 hover:bg-blue-50
                        text-left transition-all duration-200 active:scale-[0.99] group"
           >

@@ -7,7 +7,7 @@ interface Props {
 
 export function ProgressIndicator({ currentStep, totalSteps }: Props) {
   return (
-    <div className="fixed right-6 top-1/2 -translate-y-1/2 z-20 flex flex-col gap-2.5">
+    <div className="hidden sm:flex fixed right-6 top-1/2 -translate-y-1/2 z-20 flex-col gap-2.5">
       {Array.from({ length: totalSteps }).map((_, i) => (
         <div
           key={i}

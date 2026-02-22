@@ -47,7 +47,7 @@ export function FlightItem({ flight }: Props) {
             </div>
           </div>
           <div className="text-right">
-            <p className="text-2xl font-bold text-gray-900">
+            <p className="text-xl sm:text-2xl font-bold text-gray-900">
               {formatCurrency(flight.estimatedCostPerPersonUsd)}
             </p>
             <p className="text-xs text-gray-400">per person (est.)</p>

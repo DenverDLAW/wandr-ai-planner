@@ -26,7 +26,7 @@ export function ItineraryDisplay({ itinerary, plannerName, tripId, onSave }: Pro
       {/* Hero */}
       <DestinationHero itinerary={itinerary} />
 
-      <div className="max-w-4xl mx-auto px-4 md:px-8 py-10 space-y-10">
+      <div className="max-w-4xl mx-auto px-4 md:px-8 py-6 sm:py-10 space-y-6 sm:space-y-10">
         {/* Actions bar */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -101,7 +101,7 @@ export function ItineraryDisplay({ itinerary, plannerName, tripId, onSave }: Pro
       {/* Sticky save bar */}
       {onSave && (
         <div className="fixed bottom-0 left-0 right-0 z-40 p-4 bg-white/90 backdrop-blur-md border-t border-gray-100">
-          <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
+          <div className="max-w-4xl mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
               <p className="font-semibold text-gray-900">Love this trip?</p>
               <p className="text-sm text-gray-400">Save it to your account to access it anytime.</p>
@@ -110,7 +110,7 @@ export function ItineraryDisplay({ itinerary, plannerName, tripId, onSave }: Pro
               onClick={onSave}
               className="bg-blue-600 text-white font-semibold px-8 py-3 rounded-2xl
                          hover:bg-blue-700 active:scale-95 transition-all duration-200
-                         shadow-lg shadow-blue-600/30 whitespace-nowrap"
+                         shadow-lg shadow-blue-600/30 whitespace-nowrap w-full sm:w-auto"
             >
               Save This Trip
             </button>

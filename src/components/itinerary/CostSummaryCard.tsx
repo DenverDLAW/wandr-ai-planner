@@ -22,13 +22,13 @@ export function CostSummaryCard({ totalCost, breakdown, groupSize }: Props) {
 
   return (
     <div className="bg-white rounded-3xl shadow-xl shadow-gray-100 border border-gray-100 p-6 md:p-8">
-      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-8">
+      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-5 sm:mb-8">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Estimated Cost</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Estimated Cost</h2>
           <p className="text-gray-400 mt-1">Per person · {groupSize} traveler{groupSize > 1 ? 's' : ''}</p>
         </div>
-        <div className="text-right">
-          <p className="text-4xl font-bold text-gray-900">
+        <div className="text-left md:text-right">
+          <p className="text-3xl sm:text-4xl font-bold text-gray-900">
             {formatCurrency(total)}
           </p>
           <p className="text-gray-400 text-sm mt-1">per person</p>

@@ -38,21 +38,21 @@ export function CategorySection({ name, onComplete }: Props) {
   }
 
   return (
-    <div className="w-full max-w-5xl mx-auto px-6 py-8">
-      <div className="text-center mb-8">
-        <span className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 tracking-widest uppercase mb-4">
+    <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
+      <div className="text-center mb-5 sm:mb-8">
+        <span className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 tracking-widest uppercase mb-3 sm:mb-4">
           <Compass className="h-4 w-4" />
           Step 2 of 3
         </span>
-        <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-3">
+        <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-2 sm:mb-3">
           What kind of trip, {name}?
         </h2>
-        <p className="text-gray-400 text-lg">
+        <p className="text-gray-400 text-base sm:text-lg">
           Pick up to 3 — we&apos;ll blend them together.
         </p>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 mb-5 sm:mb-8">
         {CATEGORIES.map((cat) => {
           const isSelected = selected.includes(cat)
           return (

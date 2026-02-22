@@ -17,7 +17,7 @@ export function DayCard({ day }: Props) {
   return (
     <div className="rounded-3xl overflow-hidden border border-gray-100 shadow-sm bg-white">
       {/* Day hero photo */}
-      <div className="relative h-48 w-full overflow-hidden">
+      <div className="relative h-40 sm:h-48 w-full overflow-hidden">
         <div
           className={`absolute inset-0 ${
             loading ? 'skeleton' : 'bg-gradient-to-br from-blue-600 to-indigo-700'
@@ -40,7 +40,7 @@ export function DayCard({ day }: Props) {
               <p className="text-xs font-semibold text-white/60 uppercase tracking-widest mb-1">
                 Day {day.dayNumber}
               </p>
-              <h3 className="text-xl font-bold leading-tight">{day.theme}</h3>
+              <h3 className="text-lg sm:text-xl font-bold leading-tight">{day.theme}</h3>
             </div>
             <p className="text-white/70 text-sm">
               {format(new Date(day.date), 'EEE, MMM d')}

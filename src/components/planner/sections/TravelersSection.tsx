@@ -20,33 +20,33 @@ const TRAVELER_EMOJIS: Record<TravelerCount, string> = {
 
 export function TravelersSection({ name, onComplete }: Props) {
   return (
-    <div className="w-full max-w-2xl mx-auto px-8 text-center">
-      <span className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 tracking-widest uppercase mb-6">
+    <div className="w-full max-w-2xl mx-auto px-4 sm:px-8 text-center">
+      <span className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 tracking-widest uppercase mb-5 sm:mb-6">
         <Users className="h-4 w-4" />
         Step 3 of 3
       </span>
-      <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-3">
+      <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-3">
         Who&apos;s coming along?
       </h2>
-      <p className="text-gray-400 text-lg mb-10">
+      <p className="text-gray-400 text-base sm:text-lg mb-7 sm:mb-10">
         This helps us tailor the experience for your group, {name}.
       </p>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4">
         {TRAVELERS.map((t) => (
           <button
             key={t}
             onClick={() => onComplete(t)}
-            className="group flex flex-col items-center gap-3 p-6 rounded-3xl
+            className="group flex flex-col items-center gap-2 sm:gap-3 p-4 sm:p-6 rounded-3xl
                        border-2 border-gray-100 hover:border-blue-500 hover:bg-blue-50
                        transition-all duration-200 active:scale-95 cursor-pointer"
           >
-            <span className="text-4xl">{TRAVELER_EMOJIS[t]}</span>
+            <span className="text-3xl sm:text-4xl">{TRAVELER_EMOJIS[t]}</span>
             <div>
-              <p className="font-semibold text-gray-900 text-lg">
+              <p className="font-semibold text-gray-900 text-base sm:text-lg">
                 {TRAVELER_LABELS[t]}
               </p>
-              <p className="text-sm text-gray-400 mt-0.5">
+              <p className="text-xs sm:text-sm text-gray-400 mt-0.5">
                 {TRAVELER_DESCRIPTIONS[t]}
               </p>
             </div>

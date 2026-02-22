@@ -15,7 +15,7 @@ export function DestinationHero({ itinerary }: Props) {
   const { url: imageUrl, loading } = usePexelsImage(itinerary.imageKeywords)
 
   return (
-    <div className="relative w-full h-[70vh] min-h-[500px] overflow-hidden">
+    <div className="relative w-full h-[50vh] sm:h-[60vh] md:h-[70vh] min-h-[320px] sm:min-h-[400px] md:min-h-[500px] overflow-hidden">
       {/* Base layer: shimmer while fetching, deep-blue fallback once resolved */}
       <div
         className={`absolute inset-0 ${
@@ -38,19 +38,19 @@ export function DestinationHero({ itinerary }: Props) {
       <div className="absolute inset-0 bg-gradient-to-r from-black/40 to-transparent" />
 
       {/* Content */}
-      <div className="absolute bottom-0 left-0 right-0 p-8 md:p-14">
+      <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-8 md:p-14">
         <div className="max-w-4xl">
-          <p className="text-blue-300 text-sm font-semibold tracking-widest uppercase mb-3">
+          <p className="text-blue-300 text-xs sm:text-sm font-semibold tracking-widest uppercase mb-2 sm:mb-3">
             Your personalized itinerary
           </p>
-          <h1 className="text-4xl md:text-6xl font-bold text-white leading-tight mb-4">
+          <h1 className="text-2xl sm:text-4xl md:text-6xl font-bold text-white leading-tight mb-2 sm:mb-4">
             {itinerary.title}
           </h1>
-          <p className="text-white/70 text-lg md:text-xl mb-6 max-w-2xl leading-relaxed">
+          <p className="text-white/70 text-sm sm:text-lg md:text-xl mb-3 sm:mb-6 max-w-2xl leading-relaxed line-clamp-2 sm:line-clamp-none">
             {itinerary.summary}
           </p>
 
-          <div className="flex flex-wrap gap-4 text-white/80 text-sm">
+          <div className="flex flex-wrap gap-2 sm:gap-4 text-white/80 text-xs sm:text-sm">
             <span className="flex items-center gap-2">
               <MapPin className="h-4 w-4 text-blue-400" />
               {itinerary.destination}
