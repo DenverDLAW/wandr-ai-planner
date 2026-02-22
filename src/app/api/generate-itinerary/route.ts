@@ -7,6 +7,8 @@ import type { GeneratedItinerary } from '@/types/itinerary'
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
+export const maxDuration = 60
+
 // Extract JSON from Claude's response (fenced block or bare object)
 function extractJson(text: string): string | null {
   const fenced = text.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/)
@@ -54,7 +56,7 @@ export async function POST(req: NextRequest) {
 
     const message = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
-      max_tokens: 32000,
+      max_tokens: 20000,
       messages: [{ role: 'user', content: prompt }],
     })
 
