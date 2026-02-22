@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { buildItineraryPrompt } from '@/lib/ai/claude'
 import { createClient } from '@/lib/supabase/server'
@@ -36,102 +36,135 @@ function repairTruncatedJson(jsonStr: string): string {
 
   if (stack.length === 0) return jsonStr
 
-  // Strip any trailing incomplete property (e.g., `,"key": ` with no value)
   const trimmed = jsonStr.replace(/,?\s*"[^"]*"\s*:\s*$/, '')
-    .replace(/,\s*$/, '') // trailing comma
+    .replace(/,\s*$/, '')
 
   return trimmed + stack.reverse().join('')
 }
 
 export async function POST(req: NextRequest) {
+  let inputs: TripInputs
+
   try {
     const body: { inputs: TripInputs } = await req.json()
-    const { inputs } = body
+    inputs = body.inputs
+  } catch {
+    return Response.json({ error: 'Invalid request body' }, { status: 400 })
+  }
 
-    if (!inputs?.plannerName || !inputs?.startDate || !inputs?.endDate) {
-      return NextResponse.json({ error: 'Missing required trip inputs' }, { status: 400 })
-    }
+  if (!inputs?.plannerName || !inputs?.startDate || !inputs?.endDate) {
+    return Response.json({ error: 'Missing required trip inputs' }, { status: 400 })
+  }
 
-    const prompt = buildItineraryPrompt(inputs)
+  const prompt = buildItineraryPrompt(inputs)
+  const encoder = new TextEncoder()
 
-    const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 20000,
-      messages: [{ role: 'user', content: prompt }],
-    })
-
-    const rawContent = message.content[0]
-    if (rawContent.type !== 'text') {
-      return NextResponse.json({ error: 'Unexpected response from AI' }, { status: 500 })
-    }
-
-    const jsonStr = extractJson(rawContent.text)
-    if (!jsonStr) {
-      console.error('No JSON found. Response start:', rawContent.text.slice(0, 300))
-      return NextResponse.json({ error: 'Could not parse itinerary from AI response' }, { status: 500 })
-    }
-
-    let itineraryData: GeneratedItinerary
-
-    // First try parsing as-is
-    try {
-      itineraryData = JSON.parse(jsonStr)
-    } catch {
-      // Response was likely truncated — attempt repair
-      console.warn('JSON parse failed, attempting repair. stop_reason:', message.stop_reason)
-      try {
-        const repaired = repairTruncatedJson(jsonStr)
-        itineraryData = JSON.parse(repaired)
-        console.log('JSON repair succeeded')
-      } catch (repairError) {
-        console.error('JSON repair also failed:', repairError, '\nJSON start:', jsonStr.slice(0, 400))
-        return NextResponse.json({ error: 'Could not parse itinerary from AI response' }, { status: 500 })
+  // Stream SSE so Vercel sees active data flow and doesn't time out
+  const stream = new ReadableStream({
+    async start(controller) {
+      const send = (payload: object) => {
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`))
       }
-    }
 
-    // Ensure required arrays exist (repair may have dropped the last day)
-    if (!Array.isArray(itineraryData.days)) itineraryData.days = []
-    if (!Array.isArray(itineraryData.flights)) itineraryData.flights = []
-    if (!Array.isArray(itineraryData.accommodation)) itineraryData.accommodation = []
-
-    // Fire-and-forget: save to Supabase without blocking the response
-    void (async () => {
       try {
-        const supabase = await createClient()
-        const { data: { user } } = await supabase.auth.getUser()
-        if (user) {
-          const { data: trip } = await supabase
-            .from('trips')
-            .insert({
-              user_id: user.id,
-              title: itineraryData.title,
-              destination: itineraryData.destination,
-              categories: inputs.categories,
-              budget_range: inputs.budgetRange,
-              traveler_count: inputs.travelers,
-              start_date: itineraryData.startDate,
-              end_date: itineraryData.endDate,
-              planner_name: inputs.plannerName,
-              status: 'generated',
-            })
-            .select()
-            .single()
-          if (trip) {
-            await supabase.from('itineraries').insert({
-              trip_id: trip.id,
-              user_id: user.id,
-              raw_json: itineraryData,
-              summary: itineraryData.summary,
-              total_cost_estimate_usd: itineraryData.totalCostEstimateUsd,
-            })
+        // Ping immediately — this tells Vercel the function is alive
+        send({ type: 'start' })
+
+        // Stream tokens from Claude
+        let fullText = ''
+        const claudeStream = anthropic.messages.stream({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 20000,
+          messages: [{ role: 'user', content: prompt }],
+        })
+
+        for await (const chunk of claudeStream) {
+          if (
+            chunk.type === 'content_block_delta' &&
+            chunk.delta.type === 'text_delta'
+          ) {
+            fullText += chunk.delta.text
           }
         }
-      } catch { /* non-fatal */ }
-    })()
 
-    return NextResponse.json({ itinerary: itineraryData })
-  } catch (error) {
-    console.error('generate-itinerary error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
-  }
+        // Parse the complete response
+        const jsonStr = extractJson(fullText)
+        if (!jsonStr) {
+          console.error('No JSON found. Response start:', fullText.slice(0, 300))
+          send({ type: 'error', error: 'Could not parse itinerary from AI response' })
+          controller.close()
+          return
+        }
+
+        let itineraryData: GeneratedItinerary
+        try {
+          itineraryData = JSON.parse(jsonStr)
+        } catch {
+          try {
+            const repaired = repairTruncatedJson(jsonStr)
+            itineraryData = JSON.parse(repaired)
+          } catch (repairError) {
+            console.error('JSON repair failed:', repairError)
+            send({ type: 'error', error: 'Could not parse itinerary from AI response' })
+            controller.close()
+            return
+          }
+        }
+
+        if (!Array.isArray(itineraryData.days)) itineraryData.days = []
+        if (!Array.isArray(itineraryData.flights)) itineraryData.flights = []
+        if (!Array.isArray(itineraryData.accommodation)) itineraryData.accommodation = []
+
+        // Fire-and-forget: save to Supabase without blocking the response
+        void (async () => {
+          try {
+            const supabase = await createClient()
+            const { data: { user } } = await supabase.auth.getUser()
+            if (user) {
+              const { data: trip } = await supabase
+                .from('trips')
+                .insert({
+                  user_id: user.id,
+                  title: itineraryData.title,
+                  destination: itineraryData.destination,
+                  categories: inputs.categories,
+                  budget_range: inputs.budgetRange,
+                  traveler_count: inputs.travelers,
+                  start_date: itineraryData.startDate,
+                  end_date: itineraryData.endDate,
+                  planner_name: inputs.plannerName,
+                  status: 'generated',
+                })
+                .select()
+                .single()
+              if (trip) {
+                await supabase.from('itineraries').insert({
+                  trip_id: trip.id,
+                  user_id: user.id,
+                  raw_json: itineraryData,
+                  summary: itineraryData.summary,
+                  total_cost_estimate_usd: itineraryData.totalCostEstimateUsd,
+                })
+              }
+            }
+          } catch { /* non-fatal */ }
+        })()
+
+        send({ type: 'done', itinerary: itineraryData })
+        controller.close()
+      } catch (error) {
+        console.error('generate-itinerary error:', error)
+        send({ type: 'error', error: 'Internal server error' })
+        controller.close()
+      }
+    },
+  })
+
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+    },
+  })
 }

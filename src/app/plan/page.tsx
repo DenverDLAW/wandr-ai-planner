@@ -73,9 +73,46 @@ export default function PlanPage() {
         body: JSON.stringify({ inputs: finalInputs }),
       })
 
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error ?? 'Generation failed')
-      setItinerary(data.itinerary)
+      if (!res.ok || !res.body) {
+        // Non-streaming error (e.g. 400 validation)
+        const text = await res.text()
+        try {
+          const json = JSON.parse(text)
+          throw new Error(json.error ?? 'Generation failed')
+        } catch {
+          throw new Error('Generation failed')
+        }
+      }
+
+      // Consume SSE stream
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ''
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        buffer += decoder.decode(value, { stream: true })
+
+        const lines = buffer.split('\n')
+        buffer = lines.pop() ?? ''
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue
+          try {
+            const event = JSON.parse(line.slice(6))
+            if (event.type === 'done') {
+              setItinerary(event.itinerary)
+              return
+            } else if (event.type === 'error') {
+              throw new Error(event.error ?? 'Generation failed')
+            }
+          } catch (e) {
+            if (e instanceof SyntaxError) continue
+            throw e
+          }
+        }
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong')
     } finally {
