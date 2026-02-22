@@ -91,28 +91,33 @@ export default function PlanPage() {
 
       while (true) {
         const { done, value } = await reader.read()
-        if (done) break
-        buffer += decoder.decode(value, { stream: true })
+        // Process any bytes even on final read (done=true can carry the last chunk)
+        if (value) {
+          buffer += decoder.decode(value, { stream: !done })
 
-        const lines = buffer.split('\n')
-        buffer = lines.pop() ?? ''
+          const lines = buffer.split('\n')
+          buffer = lines.pop() ?? ''
 
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue
-          try {
-            const event = JSON.parse(line.slice(6))
-            if (event.type === 'done') {
-              setItinerary(event.itinerary)
-              return
-            } else if (event.type === 'error') {
-              throw new Error(event.error ?? 'Generation failed')
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue
+            try {
+              const event = JSON.parse(line.slice(6))
+              if (event.type === 'done') {
+                setItinerary(event.itinerary)
+                return
+              } else if (event.type === 'error') {
+                throw new Error(event.error ?? 'Generation failed')
+              }
+            } catch (e) {
+              if (e instanceof SyntaxError) continue
+              throw e
             }
-          } catch (e) {
-            if (e instanceof SyntaxError) continue
-            throw e
           }
         }
+        if (done) break
       }
+      // Stream closed without a 'done' event — likely a server timeout
+      throw new Error('Generation timed out — please try again')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong')
     } finally {

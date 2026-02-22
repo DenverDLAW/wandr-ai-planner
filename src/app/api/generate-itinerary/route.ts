@@ -59,35 +59,39 @@ export async function POST(req: NextRequest) {
   const prompt = buildItineraryPrompt(inputs)
   const encoder = new TextEncoder()
 
-  // Stream SSE so Vercel sees active data flow and doesn't time out
   const stream = new ReadableStream({
     async start(controller) {
       const send = (payload: object) => {
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`))
       }
+      // SSE comment heartbeat — keeps the Vercel connection alive during generation
+      const ping = () => controller.enqueue(encoder.encode(': ping\n\n'))
 
       try {
-        // Ping immediately — this tells Vercel the function is alive
-        send({ type: 'start' })
+        ping() // immediate ping so Vercel sees a live streaming response
 
-        // Stream tokens from Claude
         let fullText = ''
+        let tokenCount = 0
+
         const claudeStream = anthropic.messages.stream({
           model: 'claude-sonnet-4-6',
-          max_tokens: 20000,
+          max_tokens: 8000,
           messages: [{ role: 'user', content: prompt }],
         })
 
+        // Pipe each token AND send pings every 10 tokens to stay within Vercel's
+        // streaming-response-duration limit (300s) rather than the 60s exec timeout
         for await (const chunk of claudeStream) {
           if (
             chunk.type === 'content_block_delta' &&
             chunk.delta.type === 'text_delta'
           ) {
             fullText += chunk.delta.text
+            tokenCount++
+            if (tokenCount % 10 === 0) ping()
           }
         }
 
-        // Parse the complete response
         const jsonStr = extractJson(fullText)
         if (!jsonStr) {
           console.error('No JSON found. Response start:', fullText.slice(0, 300))

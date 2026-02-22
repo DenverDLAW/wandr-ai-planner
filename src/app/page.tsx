@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowRight, MapPin, DollarSign, Download, Share2, Sparkles } from 'lucide-react'
+import { ArrowRight, MapPin, DollarSign, Download, Share2 } from 'lucide-react'
 
 const SAMPLE_DESTINATIONS = [
   {
@@ -47,8 +47,8 @@ const FEATURES = [
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-white">
-      {/* Nav */}
-      <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 md:px-12 py-5 bg-white/80 backdrop-blur-md border-b border-gray-100">
+      {/* Nav — compact */}
+      <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 md:px-12 py-3 bg-white/80 backdrop-blur-md border-b border-gray-100">
         <span className="text-xl font-bold text-gray-900">Wandr</span>
         <div className="flex items-center gap-4">
           <Link href="/login" className="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors">
@@ -56,64 +56,47 @@ export default function LandingPage() {
           </Link>
           <Link
             href="/plan"
-            className="bg-blue-600 text-white text-sm font-semibold px-5 py-2.5 rounded-xl hover:bg-blue-700 transition-colors"
+            className="bg-blue-600 text-white text-sm font-semibold px-5 py-2 rounded-xl hover:bg-blue-700 transition-colors"
           >
             Plan a Trip
           </Link>
         </div>
       </nav>
 
-      {/* Hero */}
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
-        {/* Background */}
-        <div className="absolute inset-0">
-          <Image
-            src="https://images.pexels.com/photos/1169754/pexels-photo-1169754.jpeg?auto=compress&cs=tinysrgb&w=1920"
-            alt="Travel destination"
-            fill
-            className="object-cover"
-            priority
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-white" />
-        </div>
-
-        {/* Content */}
-        <div className="relative z-10 text-center max-w-4xl mx-auto px-6 pb-20">
-          <div className="inline-flex items-center gap-2 bg-white/90 backdrop-blur text-blue-700 text-sm font-semibold px-4 py-2 rounded-full shadow-sm mb-8">
-            <Sparkles className="h-4 w-4" />
-            Powered by Claude AI
-          </div>
-
-          <h1 className="text-5xl md:text-7xl font-bold text-white leading-tight mb-6 drop-shadow-lg">
+      {/* Hero — no background image, subtle gradient fade */}
+      <section className="relative pt-24 pb-10 px-6 text-center overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-blue-50/60 to-white pointer-events-none" />
+        <div className="relative z-10 max-w-4xl mx-auto">
+          <h1 className="text-5xl md:text-7xl font-bold text-gray-900 leading-tight mb-6">
             Your next adventure,
             <br />
-            <span className="text-blue-300">planned in seconds.</span>
+            <span className="text-blue-600">planned in seconds.</span>
           </h1>
 
-          <p className="text-xl md:text-2xl text-white/80 mb-10 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-xl md:text-2xl text-gray-500 mb-10 max-w-2xl mx-auto leading-relaxed">
             Answer 3 questions. Get a complete, bookable itinerary — with imagery,
             pricing, and links to book flights, hotels, and experiences.
           </p>
 
           <Link
             href="/plan"
-            className="inline-flex items-center gap-3 bg-white text-gray-900 font-bold
-                       text-lg px-10 py-5 rounded-2xl hover:bg-blue-50 active:scale-95
-                       transition-all duration-200 shadow-2xl"
+            className="inline-flex items-center gap-3 bg-blue-600 text-white font-bold
+                       text-lg px-10 py-5 rounded-2xl hover:bg-blue-700 active:scale-95
+                       transition-all duration-200 shadow-xl shadow-blue-600/25"
           >
             Plan My Trip
             <ArrowRight className="h-5 w-5" />
           </Link>
 
-          <p className="mt-5 text-white/50 text-sm">
-            Free · No account required · Ready in under 30 seconds
+          <p className="mt-5 text-gray-400 text-sm">
+            Free · No account required · Ready faster than you can brew a cup of coffee
           </p>
         </div>
       </section>
 
-      {/* How it works */}
-      <section className="py-24 px-6 max-w-5xl mx-auto">
-        <div className="text-center mb-16">
+      {/* How it works — directly below hero CTA */}
+      <section className="py-14 px-6 max-w-5xl mx-auto">
+        <div className="text-center mb-12">
           <p className="text-blue-600 font-semibold text-sm tracking-widest uppercase mb-3">
             How it works
           </p>
@@ -134,7 +117,7 @@ export default function LandingPage() {
       </section>
 
       {/* What you get */}
-      <section className="bg-gray-50 py-24 px-6">
+      <section className="bg-gray-50 py-20 px-6">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900">
@@ -165,7 +148,7 @@ export default function LandingPage() {
       </section>
 
       {/* Sample destinations */}
-      <section className="py-24 px-6">
+      <section className="py-20 px-6">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-3">
