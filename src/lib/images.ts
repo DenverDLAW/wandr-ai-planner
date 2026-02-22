@@ -32,7 +32,7 @@ async function pexelsSearch(query: string, size: 'large' | 'original' = 'large')
       {
         headers: { Authorization: PEXELS_API_KEY },
         next: { revalidate: 86400 },
-        signal: AbortSignal.timeout(5000), // never hang more than 5 s
+        signal: AbortSignal.timeout(10000), // never hang more than 10 s
       }
     )
     if (!res.ok) return null

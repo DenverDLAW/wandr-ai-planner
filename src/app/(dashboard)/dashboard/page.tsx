@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { format } from 'date-fns'
@@ -10,10 +11,12 @@ export default async function DashboardPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
+  if (!user?.id) redirect('/login')
+
   const { data: trips } = await supabase
     .from('trips')
     .select('*, itineraries(id, summary, total_cost_estimate_usd, raw_json)')
-    .eq('user_id', user!.id)
+    .eq('user_id', user.id)
     .order('created_at', { ascending: false })
 
   return (

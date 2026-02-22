@@ -4,8 +4,17 @@ import { useState, useEffect } from 'react'
 
 // Module-level caches survive re-renders and are shared across all hook instances.
 // Same keyword → single network round-trip no matter how many components call this.
+const MAX_CACHE_SIZE = 200
 const resolved = new Map<string, string | null>()
 const inFlight = new Map<string, Promise<string | null>>()
+
+function evictIfNeeded() {
+  if (resolved.size > MAX_CACHE_SIZE) {
+    // Evict the oldest entry (first inserted key)
+    const firstKey = resolved.keys().next().value
+    if (firstKey !== undefined) resolved.delete(firstKey)
+  }
+}
 
 function fetchImage(keywords: string): Promise<string | null> {
   const existing = inFlight.get(keywords)
@@ -48,6 +57,7 @@ export function usePexelsImage(keywords: string | undefined): PexelsImageResult 
     let cancelled = false
     fetchImage(keywords).then((result) => {
       resolved.set(keywords, result)
+      evictIfNeeded()
       if (!cancelled) {
         setUrl(result)
         setLoading(false)

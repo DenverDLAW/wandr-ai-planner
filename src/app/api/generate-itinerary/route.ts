@@ -1,61 +1,55 @@
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { buildItineraryPrompt } from '@/lib/ai/claude'
+import { extractJson, repairTruncatedJson } from '@/lib/json-utils'
 import { createClient } from '@/lib/supabase/server'
-import type { TripInputs } from '@/types/planner'
+import { TripInputsSchema } from '@/lib/validation'
+import { rateLimit } from '@/lib/rate-limit'
 import type { GeneratedItinerary } from '@/types/itinerary'
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY?.trim() })
+const apiKey = process.env.ANTHROPIC_API_KEY?.trim()
+if (!apiKey) throw new Error('Missing ANTHROPIC_API_KEY environment variable')
+const anthropic = new Anthropic({ apiKey })
 
 export const maxDuration = 60
 
-// Extract JSON from Claude's response (fenced block or bare object)
-function extractJson(text: string): string | null {
-  const fenced = text.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/)
-  if (fenced) return fenced[1].trim()
-  const start = text.indexOf('{')
-  const end = text.lastIndexOf('}')
-  if (start !== -1 && end !== -1 && end > start) return text.slice(start, end + 1)
-  return null
-}
-
-// Close any unclosed brackets/braces caused by output truncation
-function repairTruncatedJson(jsonStr: string): string {
-  const stack: string[] = []
-  let inString = false
-  let escape = false
-
-  for (const ch of jsonStr) {
-    if (escape) { escape = false; continue }
-    if (ch === '\\' && inString) { escape = true; continue }
-    if (ch === '"') { inString = !inString; continue }
-    if (inString) continue
-    if (ch === '{' || ch === '[') stack.push(ch === '{' ? '}' : ']')
-    else if ((ch === '}' || ch === ']') && stack.length) stack.pop()
-  }
-
-  if (stack.length === 0) return jsonStr
-
-  const trimmed = jsonStr.replace(/,?\s*"[^"]*"\s*:\s*$/, '')
-    .replace(/,\s*$/, '')
-
-  return trimmed + stack.reverse().join('')
-}
+// 10 generations per hour per user — enough for real use, too slow to abuse
+const RATE_LIMIT = 10
+const RATE_WINDOW_MS = 60 * 60 * 1000
 
 export async function POST(req: NextRequest) {
-  let inputs: TripInputs
+  // ── Auth guard ──────────────────────────────────────────────────────────────
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
 
+  // ── Rate limiting ───────────────────────────────────────────────────────────
+  if (!rateLimit(user.id, RATE_LIMIT, RATE_WINDOW_MS)) {
+    return NextResponse.json(
+      { error: 'Too many requests — please wait before generating another itinerary' },
+      { status: 429 }
+    )
+  }
+
+  // ── Input validation ────────────────────────────────────────────────────────
+  let body: unknown
   try {
-    const body: { inputs: TripInputs } = await req.json()
-    inputs = body.inputs
+    body = await req.json()
   } catch {
-    return Response.json({ error: 'Invalid request body' }, { status: 400 })
+    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
   }
 
-  if (!inputs?.plannerName || !inputs?.startDate || !inputs?.endDate) {
-    return Response.json({ error: 'Missing required trip inputs' }, { status: 400 })
+  const parsed = TripInputsSchema.safeParse((body as { inputs?: unknown })?.inputs)
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: 'Invalid trip inputs', details: parsed.error.flatten().fieldErrors },
+      { status: 400 }
+    )
   }
 
+  const inputs = parsed.data
   const prompt = buildItineraryPrompt(inputs)
   const encoder = new TextEncoder()
 
@@ -94,7 +88,7 @@ export async function POST(req: NextRequest) {
 
         const jsonStr = extractJson(fullText)
         if (!jsonStr) {
-          console.error('No JSON found. Response start:', fullText.slice(0, 300))
+          console.error('generate-itinerary: no JSON found in AI response')
           send({ type: 'error', error: 'Could not parse itinerary from AI response' })
           controller.close()
           return
@@ -108,7 +102,7 @@ export async function POST(req: NextRequest) {
             const repaired = repairTruncatedJson(jsonStr)
             itineraryData = JSON.parse(repaired)
           } catch (repairError) {
-            console.error('JSON repair failed:', repairError)
+            console.error('generate-itinerary: JSON repair failed:', repairError)
             send({ type: 'error', error: 'Could not parse itinerary from AI response' })
             controller.close()
             return
@@ -119,45 +113,51 @@ export async function POST(req: NextRequest) {
         if (!Array.isArray(itineraryData.flights)) itineraryData.flights = []
         if (!Array.isArray(itineraryData.accommodation)) itineraryData.accommodation = []
 
-        // Fire-and-forget: save to Supabase without blocking the response
+        // Fire-and-forget: save to Supabase without blocking the response.
+        // Errors are logged but non-fatal — the itinerary has already been returned.
         void (async () => {
           try {
-            const supabase = await createClient()
-            const { data: { user } } = await supabase.auth.getUser()
-            if (user) {
-              const { data: trip } = await supabase
-                .from('trips')
-                .insert({
-                  user_id: user.id,
-                  title: itineraryData.title,
-                  destination: itineraryData.destination,
-                  categories: inputs.categories,
-                  budget_range: inputs.budgetRange,
-                  traveler_count: inputs.travelers,
-                  start_date: itineraryData.startDate,
-                  end_date: itineraryData.endDate,
-                  planner_name: inputs.plannerName,
-                  status: 'generated',
-                })
-                .select()
-                .single()
-              if (trip) {
-                await supabase.from('itineraries').insert({
-                  trip_id: trip.id,
-                  user_id: user.id,
-                  raw_json: itineraryData,
-                  summary: itineraryData.summary,
-                  total_cost_estimate_usd: itineraryData.totalCostEstimateUsd,
-                })
+            const { data: trip, error: tripError } = await supabase
+              .from('trips')
+              .insert({
+                user_id: user.id,
+                title: itineraryData.title,
+                destination: itineraryData.destination,
+                categories: inputs.categories,
+                budget_range: inputs.budgetRange,
+                traveler_count: inputs.travelers,
+                start_date: itineraryData.startDate,
+                end_date: itineraryData.endDate,
+                planner_name: inputs.plannerName,
+                status: 'generated',
+              })
+              .select()
+              .single()
+            if (tripError) {
+              console.error('generate-itinerary: failed to save trip:', tripError.message)
+              return
+            }
+            if (trip) {
+              const { error: itinError } = await supabase.from('itineraries').insert({
+                trip_id: trip.id,
+                user_id: user.id,
+                raw_json: itineraryData,
+                summary: itineraryData.summary,
+                total_cost_estimate_usd: itineraryData.totalCostEstimateUsd,
+              })
+              if (itinError) {
+                console.error('generate-itinerary: failed to save itinerary:', itinError.message)
               }
             }
-          } catch { /* non-fatal */ }
+          } catch (saveError) {
+            console.error('generate-itinerary: unexpected save error:', saveError)
+          }
         })()
 
         send({ type: 'done', itinerary: itineraryData })
         controller.close()
       } catch (error) {
-        console.error('generate-itinerary error:', error)
+        console.error('generate-itinerary: stream error:', error)
         send({ type: 'error', error: 'Internal server error' })
         controller.close()
       }
