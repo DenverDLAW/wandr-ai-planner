@@ -1,0 +1,1 @@
+I created a GitHub account solely for this project. I've never really coded before and was shared this (https://www.youtube.com/watch?v=QoQBzR1NIqI) YouTube video, watched the 1st 2 hours, and decided to try Claude Code. This is what I decided to build for my 1st project.
