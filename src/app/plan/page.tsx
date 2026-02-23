@@ -76,12 +76,14 @@ export default function PlanPage() {
       if (!res.ok || !res.body) {
         // Non-streaming error (e.g. 400 validation)
         const text = await res.text()
+        let errorMsg = 'Generation failed'
         try {
           const json = JSON.parse(text)
-          throw new Error(json.error ?? 'Generation failed')
+          errorMsg = json.error ?? 'Generation failed'
         } catch {
-          throw new Error('Generation failed')
+          // Response wasn't JSON — keep default message
         }
+        throw new Error(errorMsg)
       }
 
       // Consume SSE stream

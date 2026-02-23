@@ -18,15 +18,17 @@ const RATE_LIMIT = 10
 const RATE_WINDOW_MS = 60 * 60 * 1000
 
 export async function POST(req: NextRequest) {
-  // ── Auth guard ──────────────────────────────────────────────────────────────
+  // ── Auth (optional — app works without an account) ──────────────────────────
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
 
   // ── Rate limiting ───────────────────────────────────────────────────────────
-  if (!rateLimit(user.id, RATE_LIMIT, RATE_WINDOW_MS)) {
+  // Authenticated users get a higher limit; anonymous users are keyed by IP.
+  const rateLimitKey = user
+    ? `user:${user.id}`
+    : `ip:${req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? req.headers.get('x-real-ip') ?? 'unknown'}`
+  const rateLimitCap = user ? RATE_LIMIT : 3
+  if (!rateLimit(rateLimitKey, rateLimitCap, RATE_WINDOW_MS)) {
     return NextResponse.json(
       { error: 'Too many requests — please wait before generating another itinerary' },
       { status: 429 }
@@ -113,8 +115,13 @@ export async function POST(req: NextRequest) {
         if (!Array.isArray(itineraryData.flights)) itineraryData.flights = []
         if (!Array.isArray(itineraryData.accommodation)) itineraryData.accommodation = []
 
-        // Fire-and-forget: save to Supabase without blocking the response.
+        // Fire-and-forget: save to Supabase (only for authenticated users).
         // Errors are logged but non-fatal — the itinerary has already been returned.
+        if (!user) {
+          send({ type: 'done', itinerary: itineraryData })
+          controller.close()
+          return
+        }
         void (async () => {
           try {
             const { data: trip, error: tripError } = await supabase
